@@ -1,13 +1,4 @@
-const env = process.env.NODE_ENV || 'development';
-console.log('env ****', env);
-
-if(env === 'development') {
-	process.env.PORT = 3000;
-	process.env.MONGODB_URI = 'mongodb://localhost:27017/TodaApp';
-} else if (env === 'test') {
-	process.env.PORT = 3000;
-	process.env.MONGODB_URI = 'mongodb://localhost:27017/TodaAppTest';
-}
+require('./config/config.js');
 
 const _ = require('lodash');
 const {ObjectID} = require('mongodb');
@@ -46,9 +37,8 @@ app.get('/todos', (req, res) => {
 
 app.get('/todos/:id', (req, res) => {
 	var id = req.params.id;
-
-	//Validate id using isValid 
-		if (!ObjectID.isValid(id)) {
+ 
+	if (!ObjectID.isValid(id)) {
 		return res.status(404).send();
 	}
 	
@@ -103,7 +93,19 @@ app.patch('/todos/:id', (req, res) => {
   })
 });
 
+// POST /users
+app.post('/users', (req, res) => {
+	var body = _.pick(req.body, ['email', 'password']);
+	var user = new User(body);
 
+	user.save().then(() => {
+		return user.generateAuthToken();
+	}).then((token) => {
+		res.header('x-auth', token).send(user);
+	}).catch((e) => {
+		res.status(400).send(e);
+	});
+});
 
 app.listen(port, () => {
 	console.log(`Started on port ${port}`);
