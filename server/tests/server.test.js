@@ -10,7 +10,6 @@ const {todos, populateTodos, users, populateUsers} = require('./seed/seed');
 beforeEach(populateUsers);
 beforeEach(populateTodos);
 
-
 describe('POST /todos', () => {
 	it('should create a new todo', (done) => {
 		var text = 'Test todo text';
@@ -64,6 +63,7 @@ describe('GET /todos', () => {
 			.end(done);
 	});
 });
+
 describe('GET /todos/:id', () => {
 	it('should return todo doc', (done) => {
 		request(app)
@@ -74,8 +74,10 @@ describe('GET /todos/:id', () => {
 			})
 			.end(done);
 	});
+
 	it('should return 404 if todo not found', (done) => {
 		var hexId = new ObjectID().toHexString();
+
 		request(app)
 			.get(`/todos/${hexId}`)
 			.expect(404)
@@ -214,7 +216,7 @@ describe('POST /users', () => {
 					expect(user).toBeTruthy();
 					expect(user.password).not.toBe(password);
 					done();
-				});
+				}).catch((e) => done(e));
 			});
 	});
 
@@ -238,5 +240,56 @@ describe('POST /users', () => {
 			})
 			.expect(400)
 			.end(done);
+	});
+});
+
+describe('POST /users/login', () => {
+	it('should login user and return auth token', (done) => {
+		request(app)
+			.post('/users/login')
+			.send({
+				email: users[0].email,
+				password: users[0].password
+			})
+			.expect(200)
+			.expect((res) => {
+				expect(res.headers['x-auth']).toBeTruthy();
+			})
+			.end((err, res) => {
+				if (err) {
+					return done(err);
+				}
+
+				User.findById(users[0]._id).then((user) => {
+					expect(user.toObject().tokens[1]).toMatchObject({
+						access: 'auth',
+						token: res.headers['x-auth']
+					});
+					done();
+				}).catch((e) => done(e));
+			});
+	});
+
+	it('should reject invalid login', (done) => {
+		request(app)
+			.post('/users/login')
+			.send({
+				email: users[0].email,
+				password: users[0].password + '1'
+			})
+			.expect(400)
+			.expect((res) => {
+				expect(res.headers['x-auth']).toBeFalsy();
+			})
+				.end((err, res) => {
+					if (err) {
+						return done(err);
+					}
+
+					User.findById(users[0]._id).then((user) => {
+						expect(user.tokens.length).toBe(1);
+						done();
+					}).catch((e) => done(e));
+				});
 	});
 });
