@@ -41,11 +41,11 @@ app.get('/todos', authenticate, (req, res) => {
 
 app.get('/todos/:id', authenticate, (req, res) => {
 	var id = req.params.id;
- 
+
 	if (!ObjectID.isValid(id)) {
 		return res.status(404).send();
 	}
-	
+
 	Todo.findOne({
 		_id: id,
 		_creator: req.user._id
@@ -76,7 +76,7 @@ app.delete('/todos/:id', authenticate, (req, res) => {
 
 		res.status(200).send({todo});
 	}).catch((e) => res.status(400).send());
-});	
+});
 
 app.patch('/todos/:id', authenticate, (req, res) => {
   var id = req.params.id;
